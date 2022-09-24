@@ -1,13 +1,26 @@
-from src.utils.DBOUtil import insertFile
-from src.utils.DBOUtil import retrieveFile
-from src.utils.DBOUtil import sqliteConnect
-from src.utils.DBOUtil import createTables
+from src.utils.DBOUtil import *
+from src.utils.FileOperationsUtil import *
+from src.constants import *
 
-
+'''
 if __name__ == '__main__':
-    sqliteConnect("../resources/database/resource.db")
-    createTables("../resources/database/resource.db")
-    insertFile("../resources/database/resource.db", "test", "text/plain", "this is a test file")
-    temp = retrieveFile("../resources/database/resource.db", "test")
+    testDBPath = "../resources/database/resource.db"
+
+    testPath = "test/path/jsonTest2"
+    testMIME = "application/json"
+    testData = '{ "name":"John", "age":30, "city":"New York"}'
+
+    createFile(testPath, testMIME, testData)
+
+    sqliteConnect(testDBPath)
+    createTables(testDBPath)
+
+    insertFile(testDBPath, testPath, testMIME, "jsonTest2.json")
+
+    removeFile(RELATIVE_STAGING_PATH + "jsonTest2.json")
+
+    temp = retrieveFile(testDBPath, testPath, "jsonTest2.json")
 
     print(temp)
+
+'''

@@ -1,2 +1,6 @@
 DATABASE_METADATA_TABLE="metadata"
 DATABASE_FILE_TABLE="data"
+RELATIVE_STAGING_PATH="\\resources\\staging\\"
+RELATIVE_OUTBOUND_PATH="\\resources\\outbound\\"
+RELATIVE_DATABASE_PATH="\\resources\\database\\"
+DATABASE_NAME="resources.db"

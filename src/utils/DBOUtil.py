@@ -1,6 +1,12 @@
 import sqlite3
 from src.constants.constants import DATABASE_METADATA_TABLE
 from src.constants.constants import DATABASE_FILE_TABLE
+from src.constants.constants import RELATIVE_OUTBOUND_PATH
+from mimetypes import guess_extension
+
+from src.utils.FileOperationsUtil import convertToBinaryData
+from src.utils.FileOperationsUtil import writeTofile
+
 
 '''
     Create Database Operations utility class which 
@@ -33,7 +39,9 @@ def sqliteConnect(connectionString):
         return conn
 
 
-
+'''
+    Function to initialize tables in SQLite3 database
+'''
 def createTables(connectionString):
     try:
         connection = sqliteConnect(connectionString)
@@ -64,7 +72,6 @@ def createTables(connectionString):
         # return 0 to signify everything was successful
         return 0
 
-
 '''
     Function to insert files into the database 
     
@@ -75,7 +82,7 @@ def createTables(connectionString):
     :returns
         - 0 : ALL GOOD
 '''
-def insertFile(connectionString, filePath, mimeType, fileData):
+def insertFile(connectionString, filePath, mimeType, inboundFileName):
     try:
         connection = sqliteConnect(connectionString)
         print("Connected to database")
@@ -90,7 +97,7 @@ def insertFile(connectionString, filePath, mimeType, fileData):
                                 INSERT OR REPLACE INTO {DATABASE_FILE_TABLE} (file_path, file_data) VALUES (?, ?)  
                                 """
 
-        binaryData = ''.join(format(ord(i), '08b') for i in fileData)
+        binaryData = convertToBinaryData(inboundFileName)
 
         cursor.execute(sqlMetadataInsertQuery, (filePath, mimeType))
         cursor.execute(sqlFileInsertQuery, (filePath, binaryData))
@@ -106,8 +113,6 @@ def insertFile(connectionString, filePath, mimeType, fileData):
         if connection:
             connection.close()
             print("Connection closed")
-
-        #return 0 to signify everything was successful
         return 0
 
 
@@ -121,7 +126,7 @@ def insertFile(connectionString, filePath, mimeType, fileData):
         - 1 : failure to find file in metadata table
         - 2 : failure to find file in data table
 '''
-def retrieveFile(connectionString, filePath):
+def retrieveFile(connectionString, filePath, workingDirectory):
     try:
         mimeType = None
         fileData = None
@@ -131,30 +136,20 @@ def retrieveFile(connectionString, filePath):
         cursor = connection.cursor()
 
         sqlFileTypeSearchQuery = f"""SELECT * FROM {DATABASE_METADATA_TABLE} WHERE file_path=?"""
-
         sqlFileDataSearchQuery = f"""SELECT * FROM {DATABASE_FILE_TABLE} WHERE file_path=?"""
 
-        # As we know the database is made up of two tables as expressed in the design doc we don't need much more logic
-        # than this I believe. Simple enough to grab check that it grabbed 1 and return it. This checks the file exists.
         result = cursor.execute(sqlFileTypeSearchQuery, (filePath,))
-
-        if cursor.fetchone()[1] is not NoneType:
-            mimeType = cursor.fetchone()[1]
-        else:
-            # return 1 for now to indicate that the file does not exist
-            return 1
+        mimeType = cursor.fetchone()[1]
 
         result = cursor.execute(sqlFileDataSearchQuery, (filePath,))
+        fileData = cursor.fetchone()[1]
 
-        if cursor.fetchone()[1] is not None:
-            temp = cursor.fetchone()[1]
-            fileData = ''.join(format(ord(i), '08b') for i in temp)
+        # Create outbound file name
+        outboundFileName = workingDirectory + RELATIVE_OUTBOUND_PATH + filePath.split("/")[-1] + guess_extension(mimeType)
 
-        else:
-            # return 2 for now to indicate that the file for some reason exists but it's data was not stored.
-            return 2
+        writeTofile(fileData, outboundFileName)
 
-        return((mimeType, fileData))
+        return(mimeType, fileData)
 
     except sqlite3.Error as error:
         print("Failure while retrieving file from database:")
