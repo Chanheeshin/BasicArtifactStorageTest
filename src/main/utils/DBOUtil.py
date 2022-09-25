@@ -1,11 +1,12 @@
 import sqlite3
-from src.constants.constants import DATABASE_METADATA_TABLE
-from src.constants.constants import DATABASE_FILE_TABLE
-from src.constants.constants import RELATIVE_OUTBOUND_PATH
+from src.main.constants.constants import DATABASE_METADATA_TABLE
+from src.main.constants.constants import DATABASE_FILE_TABLE
+from src.main.constants.constants import RELATIVE_OUTBOUND_PATH
 from mimetypes import guess_extension
 
-from src.utils.FileOperationsUtil import convertToBinaryData
-from src.utils.FileOperationsUtil import writeTofile
+from src.main.utils.FileOperationsUtil import convertToBinaryData
+from src.main.utils.FileOperationsUtil import writeTofile
+from src.main.utils.FileOperationsUtil import removeFile
 
 
 '''
@@ -31,13 +32,11 @@ from src.utils.FileOperationsUtil import writeTofile
 def sqliteConnect(connectionString):
     try:
         conn = sqlite3.connect(connectionString)
-
-
-    except sqlite3.Error:
+    except sqlite3.Error as error:
         print(f"Error connecting to the database '{connectionString}'")
-    finally:
+        return error
+    else:
         return conn
-
 
 '''
     Function to initialize tables in SQLite3 database
@@ -61,6 +60,8 @@ def createTables(connectionString):
         cursor.execute(sqlCreateMetadataTableQuery)
         cursor.execute(sqlCreateFileTableQuery)
 
+        return 0
+
     except sqlite3.Error as error:
         print("Failed to create tables in database:")
         print(error)
@@ -68,9 +69,6 @@ def createTables(connectionString):
         if connection:
             connection.close()
             print("Connection closed")
-
-        # return 0 to signify everything was successful
-        return 0
 
 '''
     Function to insert files into the database 
@@ -153,6 +151,40 @@ def retrieveFile(connectionString, filePath, workingDirectory):
 
     except sqlite3.Error as error:
         print("Failure while retrieving file from database:")
+        print(error)
+    finally:
+        if connection:
+            connection.close()
+            print("Connection closed")
+
+'''
+    Function to delete files from the database
+'''
+def deleteFile(connectionString, filePath, workingDirectory):
+    try:
+        connection = sqliteConnect(connectionString)
+        cursor = connection.cursor()
+
+        sqlDeleteMetadataFileQuery = f"""DELETE FROM {DATABASE_METADATA_TABLE} WHERE file_path=?"""
+        sqlDeleteDataFileQuery = f"""DELETE FROM {DATABASE_FILE_TABLE} WHERE file_path=?"""
+        sqlFileTypeSearchQuery = f"""SELECT * FROM {DATABASE_METADATA_TABLE} WHERE file_path=?"""
+
+        result = cursor.execute(sqlFileTypeSearchQuery, (filePath,))
+        mimeType = cursor.fetchone()[1]
+
+        outboundFileName = workingDirectory + RELATIVE_OUTBOUND_PATH + filePath.split("/")[-1] + guess_extension(mimeType)
+
+        removeFile(outboundFileName)
+
+        cursor.execute(sqlDeleteMetadataFileQuery, (filePath,))
+        cursor.execute(sqlDeleteDataFileQuery, (filePath,))
+
+        connection.commit()
+
+        return
+
+    except sqlite3.Error as error:
+        print("Failure to delete file")
         print(error)
     finally:
         if connection:

@@ -1,7 +1,3 @@
-from src.utils.DBOUtil import *
-from src.utils.FileOperationsUtil import *
-from src.constants import *
-
 '''
 if __name__ == '__main__':
     testDBPath = "../resources/database/resource.db"

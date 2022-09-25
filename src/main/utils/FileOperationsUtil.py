@@ -1,5 +1,3 @@
-from mimetypes import guess_extension
-from src.constants.constants import RELATIVE_STAGING_PATH
 import os
 
 def removeFile(fileName):
@@ -20,7 +18,7 @@ def writeTofile(data, fileName):
         file.write(data)
     print("Stored blob data into: ", fileName, "\n")
 
-def is_binary(mimeType, subtype):
+def isBinary(mimeType, subtype):
     if mimeType == "text":
         return False
     if mimeType != "application":
