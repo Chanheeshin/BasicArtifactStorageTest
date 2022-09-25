@@ -7,6 +7,7 @@ from flask import Flask, request, Response
 
 #Create flask application
 app = Flask(__name__)
+conn = None
 
 @app.route('/<path:path>', methods=['GET', 'POST', 'DELETE', 'PUT', 'PATCH'])
 def routeHandler(path):
@@ -38,14 +39,11 @@ def createResource(path):
         fileName += guess_extension(mimeType)
         fileName = str(workingDirectory) + RELATIVE_STAGING_PATH + fileName
 
-        # Local Database path
-        connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
-
         # Create local file
         writeTofile(requestBody, fileName)
 
         # Call DBO insert
-        insertFile(connectionPath, filePath, mimeType, fileName)
+        insertFile(conn, filePath, mimeType, fileName)
 
         # Remove local file
         removeFile(fileName)
@@ -65,11 +63,8 @@ def retrieveResource(path):
         # HEADERS
         filePath = request.path[1:]
 
-        # Local Database path
-        connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
-
         # Retrieve from DBO and create outbound file
-        temp = retrieveFile(connectionPath, filePath, str(workingDirectory))
+        temp = retrieveFile(conn, filePath, str(workingDirectory))
     except:
         return Response(request.environ.get('SERVER_PROTOCOL') + " 404 " + "Resource does not exist", status=404)
     else:
@@ -90,11 +85,8 @@ def deleteResource(path):
         # HEADERS
         filePath = request.path[1:]
 
-        # Local Database path
-        connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
-
         # Retrieve from DBO and create outbound file
-        deleteFile(connectionPath, filePath, str(workingDirectory))
+        deleteFile(conn, filePath, str(workingDirectory))
     except:
         return Response(request.environ.get('SERVER_PROTOCOL') + " 404 " + "Failed to delete resource", status=403)
     else:
@@ -105,8 +97,8 @@ if __name__ == '__main__':
     connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
 
     try:
-        sqliteConnect(connectionPath)
-        createTables(connectionPath)
+        conn = sqliteConnect(connectionPath)
+        createTables(conn)
     except sqlite3.Error as error:
         print(error)
     else:
