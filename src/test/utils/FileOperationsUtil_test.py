@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, Mock, patch, mock_open
 from src.main.utils.FileOperationsUtil import *
-import src.main.utils.FileOperationsUtil
 
 class testFileOperationsUtil(unittest.TestCase):
 
