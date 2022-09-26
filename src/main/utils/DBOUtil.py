@@ -80,9 +80,9 @@ def createTables(connectionObject):
     :returns
         - 0 : ALL GOOD
 '''
-def insertFile(connectionObject, filePath, mimeType, inboundFileName):
+def insertFile(connectionString, filePath, mimeType, inboundFileName):
     try:
-        connection = connectionObject
+        connection = sqliteConnect(connectionString)
         print("Connected to database")
 
         cursor = connection.cursor()
@@ -124,11 +124,9 @@ def insertFile(connectionObject, filePath, mimeType, inboundFileName):
         - 1 : failure to find file in metadata table
         - 2 : failure to find file in data table
 '''
-def retrieveFile(connectionObject, filePath, workingDirectory):
+def retrieveFile(connectionString, filePath, workingDirectory):
     try:
-        mimeType = None
-        fileData = None
-        connection = connectionObject
+        connection = sqliteConnect(connectionString)
         print("Connected to database")
 
         cursor = connection.cursor()
@@ -160,9 +158,9 @@ def retrieveFile(connectionObject, filePath, workingDirectory):
 '''
     Function to delete files from the database
 '''
-def deleteFile(connectionObject, filePath, workingDirectory):
+def deleteFile(connectionString, filePath, workingDirectory):
     try:
-        connection = connectionObject
+        connection = sqliteConnect(connectionString)
         cursor = connection.cursor()
 
         sqlDeleteMetadataFileQuery = f"""DELETE FROM {DATABASE_METADATA_TABLE} WHERE file_path=?"""

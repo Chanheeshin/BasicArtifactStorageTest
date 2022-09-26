@@ -51,7 +51,8 @@ class testDBOUtil(unittest.TestCase):
         conn.commit.return_value = conn
 
         with patch.object(src.main.utils.DBOUtil, 'convertToBinaryData', return_value="data") as mock_method:
-            insertFile(conn, testFilePath, testMimeType, testInboundFileName)
+            with patch.object(src.main.utils.DBOUtil, 'sqliteConnect', return_value=conn) as mock_conn:
+                insertFile(conn, testFilePath, testMimeType, testInboundFileName)
 
         cursor.execute.assert_called()
         conn.commit.assert_called()
@@ -70,8 +71,9 @@ class testDBOUtil(unittest.TestCase):
         cursor.fetchone.return_value = ['correctKeys', 'correctValues']
 
         with patch.object(src.main.utils.DBOUtil, 'writeTofile', return_value="mocked function call") as mock_write, \
-                patch.object(src.main.utils.DBOUtil, 'guess_extension', return_values="mocked_values") as mock_guess:
-                    resultTuple = retrieveFile(conn, testFilePath, testWorkingDir)
+                patch.object(src.main.utils.DBOUtil, 'guess_extension', return_values="mocked_values") as mock_guess, \
+                    patch.object(src.main.utils.DBOUtil, 'sqliteConnect', return_value=conn) as mock_conn:
+                        resultTuple = retrieveFile(conn, testFilePath, testWorkingDir)
 
         cursor.execute.assert_called()
         cursor.fetchone.assert_called()
@@ -90,8 +92,9 @@ class testDBOUtil(unittest.TestCase):
         conn.commit.return_value = conn
 
         with patch.object(src.main.utils.DBOUtil, 'removeFile', return_value="mocked function call") as mock_write, \
-                patch.object(src.main.utils.DBOUtil, 'guess_extension', return_values="mocked_values") as mock_guess:
-                    deleteFile(conn, testFilePath, testWorkingDir)
+                patch.object(src.main.utils.DBOUtil, 'guess_extension', return_values="mocked_values") as mock_guess, \
+                    patch.object(src.main.utils.DBOUtil, 'sqliteConnect', return_value=conn) as mock_conn:
+                        deleteFile(conn, testFilePath, testWorkingDir)
 
         cursor.execute.assert_called()
         cursor.fetchone.assert_called()

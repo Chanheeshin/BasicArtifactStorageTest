@@ -1,13 +1,14 @@
 from src.main.utils.DBOUtil import *
+from src.main.utils.FileOperationsUtil import writeTofile
+from src.main.utils.FileOperationsUtil import removeFile
 from src.main.constants.constants import *
 from src.main.models.responseModel import responseModel
 from pathlib import Path
-
 from flask import Flask, request, Response
 
-#Create flask application
 app = Flask(__name__)
-conn = None
+workingDirectory = Path(__file__).parents[3]
+connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
 
 @app.route('/<path:path>', methods=['GET', 'POST', 'DELETE', 'PUT', 'PATCH'])
 def routeHandler(path):
@@ -25,14 +26,10 @@ def routeHandler(path):
 '''
 def createResource(path):
     try:
-        # Working directory variable
-        workingDirectory = Path(__file__).parents[3]
-
         # HEADERS
         mimeType = request.headers['Content-Type']
-        contentLength = request.headers['Content-Length']
         requestBody = request.get_data()
-        filePath = request.path[1:]
+        filePath = path
 
         # Local file name
         fileName = filePath.split('/')[-1]
@@ -43,7 +40,7 @@ def createResource(path):
         writeTofile(requestBody, fileName)
 
         # Call DBO insert
-        insertFile(conn, filePath, mimeType, fileName)
+        insertFile(connectionPath, filePath, mimeType, fileName)
 
         # Remove local file
         removeFile(fileName)
@@ -57,14 +54,8 @@ def createResource(path):
 '''
 def retrieveResource(path):
     try:
-        # Working directory variable
-        workingDirectory = Path(__file__).parents[3]
-
-        # HEADERS
-        filePath = request.path[1:]
-
         # Retrieve from DBO and create outbound file
-        temp = retrieveFile(conn, filePath, str(workingDirectory))
+        temp = retrieveFile(connectionPath, path, str(workingDirectory))
     except:
         return Response(request.environ.get('SERVER_PROTOCOL') + " 404 " + "Resource does not exist", status=404)
     else:
@@ -79,23 +70,14 @@ def retrieveResource(path):
 '''
 def deleteResource(path):
     try:
-        # Working directory variable
-        workingDirectory = Path(__file__).parents[3]
-
-        # HEADERS
-        filePath = request.path[1:]
-
         # Retrieve from DBO and create outbound file
-        deleteFile(conn, filePath, str(workingDirectory))
+        deleteFile(connectionPath, path, str(workingDirectory))
     except:
         return Response(request.environ.get('SERVER_PROTOCOL') + " 404 " + "Failed to delete resource", status=403)
     else:
         return Response(request.environ.get('SERVER_PROTOCOL') + " 200 " + "OK", status=200)
 
-if __name__ == '__main__':
-    workingDirectory = Path(__file__).parents[3]
-    connectionPath = str(workingDirectory) + RELATIVE_DATABASE_PATH + DATABASE_NAME
-
+def createApp():
     try:
         conn = sqliteConnect(connectionPath)
         createTables(conn)
@@ -103,3 +85,6 @@ if __name__ == '__main__':
         print(error)
     else:
         app.run()
+
+if __name__ == '__main__':
+    createApp()
